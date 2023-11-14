@@ -1,0 +1,364 @@
+﻿この３つのスクリプトを使って、マップ上にワープできる地形を用意し、駒を瞬間移動できるようにしたいと思います。
+
+まず、ワープ地形の概要を紹介します。
+
+➀Game.csに「Warp0A」「Warp0B」という２種類のプレハブを用意します。
+②「Warp0A」には、Warp0Aというタグを設定しています。BoxCollider2Dもアタッチされています。
+③「Warp0B」には、Warp0Bというタグを設定しています。BoxCollider2Dもアタッチされています。
+④２つのワープ地形は、Game.csで使用されている配列をもとに決定しています。
+⑤ワープ地形はマップ上に一対しか用意しません。
+例えば、「Warp0A」と「Warp0B」の２種類のワープ地形用のプレハブがありますが、これらは見た目が同じです。
+見た目が同じプレハブでワープをさせたいと考えています。そのため、ワープは１対１でしか行われません。
+
+ワープ地形で実現してほしい機能
+➀駒がWarp0Aタグの地形に入ると、Warp0Bタグの地形に瞬間移動する機能
+②駒がWarp0Bタグの地形に入ると、Warp0Aタグの地形に瞬間移動する機能
+
+しかし、問題点もあります。実際に駒をワープ地形に入れて、ワープ先に移動させることはできるのですが、ワープした後の駒がワープ元とワープ先で交互に移動し続けるというエラーが起きてしまいます。
+
+※便宜上駒A、駒Bという種類の駒があったとする
+➀駒Aがワープ元からワープ先に移動したら、そこでワープ処理が終了
+②駒Aがワープ地形に存在している状態で、駒Bが対応するワープ地形に移動したら
+　駒Aと駒Bの位置は入れ替わる。そして入れ替わったら、同様にワープ処理が終了
+③駒Aがワープ元からワープ先に移動したら、そこでワープ処理が終了するが、駒Aをワープ地形から通常の地形に　移動させた後、駒Bをワープ地形に移動すると、ワープ処理が起き、➀の処理を開始する。
+
+以上の要件をもとに修正してください
+/* 
+
+以上がGame.csです
+
+また、前提として、
+Warp0AプレハブにはWarp0Aタグが設定されており、
+Warp0BプレハブにはWarp0Bタグが設定しています。
+
+chessman.csのTeleport関数
+以下の処理を書いてください
+①：駒がWarp0Aプレハブに入ると、もう片方のWarp0Bに瞬間的に移動する
+②：駒がWarp0Bプレハブに入ると、もう片方のWarp0Aに瞬間的に移動する
+③：Warp0Aに駒が存在するときに、自身がクリックした駒をWarp0Bに移動させたとき、
+　　Warp0AとWarp0Bにある駒を交換する。
+④：Warp0Bに駒が存在するときに、自身がクリックした駒をWarp0Aに移動させたとき、
+　　Warp0AとWarp0Bにある駒を交換する。
+
+自分が考えたコード
+if (this.name.Contains("white") || this.name.Contains("black"))
+{
+   Collider2D tileCollider = Physics2D.OverlapPoint(new Vector2(matrixX, matrixY));
+   if (tileCollider.CompareTag("Warp0A"))
+    {
+　　　　if(Warp0Bタグの地形に駒が存在する場合)
+        {
+         Warp0Aタグの地形にある駒の座標　→　仮の変数WarpTmp
+         Warp0Bタグの地形にある駒の座標　→　Warp0Aタグの地形に配置（Warp0Aタグの地形は"Game.csで配列を用いて定義している"）
+         仮の変数WarpTmp　→　Warp0Bタグの地形に配置（Warp0Aタグの地形は"Game.csで配列を用いて定義している"）
+　　　　}else
+        {
+         Warp0Aタグの地形にある駒の座標　→　Warp0Bタグの地形に配置（Warp0Bタグの地形は"Game.csで配列を用いて定義している"）
+        }
+    else if (tileCollider.CompareTag("Warp0B"))
+    {
+        if(Warp0Aタグの地形に駒が存在する場合)
+        {
+         Warp0Aタグの地形にある駒の座標　→　仮の変数WarpTmp
+         Warp0Bタグの地形にある駒の座標　→　Warp0Aタグの地形に配置（Warp0Aタグの地形は"Game.csで配列を用いて定義している"）
+         仮の変数WarpTmp　→　Warp0Bタグの地形に配置（Warp0Aタグの地形は"Game.csで配列を用いて定義している"）
+　　　　}else
+        {
+         Warp0Bタグの地形にある駒の座標　→　Warp0Aタグの地形に配置（Warp0Aタグの地形は"Game.csで配列を用いて定義している"）
+        }
+     }
+}
+
+*/
+
+/*
+そのスクリプトだといくつか問題点がありました
+➀：駒がワープ先に（Warp0Bタグ）移動後、別のターンでWarp0Aタグのワープ地形に駒を移動した瞬間、
+Warp0Aタグに入った駒は消滅し、Warp0Bタグの駒はWarp0Aタグのワープ地形に移動しなかった
+※Warp0AとWarp0Bが逆の時も同様
+修正点➡
+Warp0Aに駒が存在するときに、自身がクリックした駒をWarp0Bに移動させたとき、
+Warp0AとWarp0Bにある駒を交換する。
+Warp0Bに駒が存在するときに、自身がクリックした駒をWarp0Aに移動させたとき、
+Warp0AとWarp0Bにある駒を交換する。
+
+②駒がワープ先に（Warp0Bタグ）移動後、Warp0Bタグのワープ地形にいる状態の駒をクリックして、移動範囲を表示させると、ワープ元（Warp0A）を起点に移動範囲を表示してしまう。
+➡ワープ元を起点に移動範囲を表示させるのではなく、ちゃんと駒を起点に移動範囲を表示させる
+
+③ワープがゲーム中１回しか実行できない。
+具体的に言うと、駒を実際にワープした後、他の駒をワープ地形に移動しても反応しない。
+➡ワープはゲーム中に何度も実行できるようにする
+
+④　②、③のの処理を行った後、なぜか、ワープ地形に移動範囲を示せず、移動できなくなってしまう
+
+⑤　②、③、④の処理後に、駒が配置されていないワープ地形をクリックすると、なぜか駒の移動範囲が表示され、移動範囲先をクリックすると、③などで消滅したはずの駒が急に出現し、移動してくる
+
+
+以上の５つの課題を解決して、コードを修正してください
+
+*/
+
+    // ワープ地形
+    public void Teleport()
+    {
+        // 駒の現在位置
+        Vector3 currentPosition = transform.position;
+
+        // ワープ先のタグを設定
+        string warpDestinationTag = "";
+
+        // チェスマンがワープ先のタイルに入ったとき、ワープ先のタグを確認します。
+        Collider2D[] tileColliders = Physics2D.OverlapPointAll(currentPosition);
+        foreach (var tileCollider in tileColliders)
+        {
+            if (tileCollider.CompareTag("Warp0A"))
+            {
+                warpDestinationTag = "Warp0B";
+                break;
+            }
+            else if (tileCollider.CompareTag("Warp0B"))
+            {
+                warpDestinationTag = "Warp0A";
+                break; 
+            }
+        }
+
+        // ワープ先の座標を取得
+        GameObject[] warpDestinations = GameObject.FindGameObjectsWithTag(warpDestinationTag);
+        if (warpDestinations.Length > 0)
+        {
+            //ワープ先の座標を取得
+            Vector3 warpDestination = warpDestinations[0].transform.position;
+
+            // 駒の位置をワープ先の位置に移動させます。
+            transform.position = warpDestination;
+
+            // ワープ先の位置にある駒を取得します。
+            Collider2D destinationChessmanCollider = Physics2D.OverlapPoint(warpDestination);
+            if (destinationChessmanCollider != null)
+            {
+                GameObject destinationChessman = destinationChessmanCollider.gameObject;
+
+                // ワープ元とワープ先の駒を交換
+                // ワープ先の駒を、ワープ元に駒に持ってくる
+                destinationChessman.transform.position = currentPosition;
+            }
+        }
+    }
+
+
+        private bool isWarping = false;
+
+    void Update()
+    {
+        Collider2D[] colliders = Physics2D.OverlapPointAll(transform.position);
+        Chessman chessman = GetComponent<Chessman>();
+
+        // クリックしたのが駒である場合
+        foreach (var collider in colliders)
+        {
+            if (collider.CompareTag("Buff"))
+            {
+                BuffChessChange(); // 駒のチェンジ
+                break;
+            }
+            else if (collider.CompareTag("Warp0A") || collider.CompareTag("Warp0B"))
+            {
+                // ワープ処理: ワープ先のワープ地形のタグを取得
+                string warpDestinationTag = collider.CompareTag("Warp0A") ? "Warp0B" : "Warp0A";
+                GameObject warpDestination = GameObject.FindGameObjectWithTag(warpDestinationTag);
+
+                if (warpDestination != null && (!isWarping || warpDestination.GetComponentInChildren<Chessman>() == null))
+                {
+                    // ワープ中のフラグを設定
+                    isWarping = true;
+
+                    // ワープ先の座標を取得
+                    Vector3 warpDestinationPosition = warpDestination.transform.position;
+
+                    // ワープ処理が必要な駒がワープ地形に存在するか確認
+                    Collider2D destinationChessmanCollider = Physics2D.OverlapPoint(warpDestinationPosition);
+                    if (destinationChessmanCollider != null)
+                    {
+                        GameObject destinationChessman = destinationChessmanCollider.gameObject;
+
+                        // ワープ元とワープ先の駒が存在する場合、位置を交換
+                        Vector3 tempPosition = destinationChessman.transform.position;
+                        destinationChessman.transform.position = transform.position;
+                        transform.position = tempPosition;
+                    }
+                    else
+                    {
+                        // ワープ先に駒が存在しない場合、駒の位置をワープ先の位置に移動
+                        transform.position = warpDestinationPosition;
+                    }
+
+                    // Unity座標も更新
+                    chessman.SetXBoard((int)transform.position.x);
+                    chessman.SetYBoard((int)transform.position.y);
+                    chessman.SetCoords();
+
+                    // ワープ処理が終了したらワープ中のフラグを解除
+                    isWarping = false;
+                    break;
+                }
+            }
+        }
+    }
+
+        /*このスクリプトでワープ処理をしても、うまくいきません。
+
+そこで提案として、ワープ処理の構造を変更したいと思います
+
+＜具体的な処理＞
+➀Warp0Aタグ・Warp0Bタグの地形どちらにも駒が存在しない状態で、駒をWarp0Aタグ地形に移動させたら、ワープできる。対応関係（Warp0A地形➡Warp0B地形にワープ）。
+このときの内部処理は、駒がWarp0Aタグに移動したときの駒の情報・座標を記録し、Warp0Aタグの地形にある駒を削除、次に対応するWarp0Bタグの地形に記録した駒を出現させる。
+②Warp0Aタグ・Warp0Bタグの地形どちらにも駒が存在しない状態で、駒をWarp0Bタグ地形に移動させたら、ワープできる。対応関係（Warp0B地形➡Warp0A地形にワープ）。
+このときの内部処理は、駒がWarp0Bタグに移動したときの駒の情報・座標を記録し、Warp0Bタグの地形にある駒を削除、次に対応するWarp0Aタグの地形に記録した駒を出現させる。
+③Warp0Bタグの地形に駒が存在する状態で、駒をWarp0Aタグ地形に移動させたら、Warp0Aタグ地形にある駒とWarp0Bタグ地形にあつ駒を入れ替える。
+このときの内部処理は、Warp0Aタグ地形にある駒の情報・座標を記録し、削除する。同様にWarp0Bタグ地形にある駒の情報・座標を記録し、削除する。その後、記録したWarp0Aタグ地形にあった駒をWarp0Bタグ地形に出現させ、記録したWarp0Bタグ地形にあった駒をWarp0Aタグ地形に出現させる。
+④Warp0Aタグの地形に駒が存在する状態で、駒をWarp0Bタグ地形に移動させたら、Warp0Bタグ地形にある駒とWarp0Aタグ地形にあつ駒を入れ替える。
+このときの内部処理は、Warp0Bタグ地形にある駒の情報・座標を記録し、削除する。同様にWarp0Aタグ地形にある駒の情報・座標を記録し、削除する。その後、記録したWarp0Bタグ地形にあった駒をWarp0Aタグ地形に出現させ、記録したWarp0Aタグ地形にあった駒をWarp0Bタグ地形に出現させる。
+
+
+以上の処理にしてください*/
+
+
+<具体的な処理イメージ>
+①：ワープ元地形に駒が入ったら、駒の"座標"を取得する。
+
+②：ワープ元地形に対応するワープ先地形のタグも取得する
+（Warp0Aタグなら→Warp0Bタグ、Warp0Bタグなら→Warp0Bタグ）
+※ワープ地形はマップ上に全く同じものを２つ用意しています（異なるのはタグだけWarp0A、Warp0B等）
+
+③：②で取得したワープ先地形のタグをマップ上で探索、
+当然タグは１つしか"存在しない"ように設定しているので、
+①で取得したワープ先地形のタグの"座標"を取得する
+
+④：②で取得したワープ先地形のタグがWarp0AまたはWarp0Bだったら、①で取得した駒の"座標"を、③で取得したワープ先地形の座標に変更
+※これにより、ワープ元にいた駒をワープ先にワープさせる（座標を変えたため）
+
+ここまでが、完成している機能
+
+⑤：ワープ元地形にある駒の情報を全て完全に削除する
+
+    private GameObject warpingFrom = null; // ワープ地形から出た地形の参照
+
+    private void Teleport(Collider2D collider)
+    {
+        // ワープ先のワープ地形のタグを取得
+        // Warp0A➡Warp0B　Warp0B➡Warp0A　と対応している
+        string warpDestinationTag = collider.CompareTag("Warp0A") ? "Warp0B" : "Warp0A";
+
+        // ワープ先の地形を取得
+        GameObject warpDestination = GameObject.FindGameObjectWithTag(warpDestinationTag);
+
+        if (warpDestination != null)
+        {
+            // ワープ元の地形のColliderを取得
+            Collider2D originalTile = Physics2D.OverlapPoint(transform.position);
+
+            // ワープ元がワープ地形の場合
+            if (originalTile.CompareTag("Warp0A") || originalTile.CompareTag("Warp0B"))
+            {
+                // ワープ先とワープ元が同じでない場合にワープ処理を行う
+                if (warpDestination != warpingFrom)
+                {
+                    // Unity座標も更新
+                    Chessman chessman = GetComponent<Chessman>();
+                    // ワープ元の座標
+                    int startX = (int)transform.position.x;
+                    int startY = (int)transform.position.y;
+                    // ワープ先の座標
+                    int endX = (int)warpDestination.transform.position.x;
+                    int endY = (int)warpDestination.transform.position.y;
+
+                    // Unity座標も更新
+                    chessman.SetXBoard(endX);
+                    chessman.SetYBoard(endY);
+                    chessman.SetCoords();
+
+                    // ワープ元から出たことを記録
+                    warpingFrom = originalTile.gameObject;
+                }
+            }
+            else
+            {
+                // ワープ元がワープ地形でない場合、ワープ処理中のフラグを解除
+                isWarping = false;
+
+                // ワープ先に駒が存在する場合、駒同士の位置入れ替えを行う
+                if (warpDestination.CompareTag("Chessman"))
+                {
+                    // ワープ先の駒の座標をデバッグログとして表示
+                    Chessman chessman = warpDestination.GetComponent<Chessman>();
+                    int endX = chessman.GetXBoard();
+                    int endY = chessman.GetYBoard();
+                }
+
+                // ワープ元から出たことを記録
+                warpingFrom = originalTile.gameObject;
+            }
+        }
+    }
+
+
+// 地形を座標で特定して通常の地形に変更する関数
+    private void ChangeTile()
+    {
+        // 駒の位置に存在するバフ地形のColliderを取得
+        Collider2D tileCollider = Physics2D.OverlapPoint(transform.position);
+
+        Game sc = controller.GetComponent<Game>();  // ゲームコントローラーの参照を取得
+
+        if (tileCollider.CompareTag("Tile"))
+        {
+            // Tile地形を破棄して消失させる
+            Destroy(tileCollider.gameObject);
+
+            // Tile地形の位置に新しい地形(TileSecond)を生成
+            Instantiate(sc.grassSecondPrefab, tileCollider.transform.position, Quaternion.identity);
+        }
+        else if (tileCollider.CompareTag("Buff"))
+        {
+            // バフ地形を破棄して消失させる
+            Destroy(tileCollider.gameObject);
+
+            // バフ地形の位置に新しい地形（grassプレハブなど）を生成
+            Instantiate(sc.grassSecondPrefab, tileCollider.transform.position, Quaternion.identity);
+            //break; // 特定のバフ地形が見つかったらループを終了
+        }
+        else if (tileCollider.CompareTag("Warp0A") || tileCollider.CompareTag("Warp0B"))
+        {
+            // ワープ元の地形を取得
+            GameObject warp0A = GameObject.FindGameObjectWithTag("Warp0A");
+            GameObject warp0B = GameObject.FindGameObjectWithTag("Warp0B");
+            GameObject[] tilesToWarp = GameObject.FindGameObjectsWithTag("Tile"); // Tileタグのオブジェクトを取得
+
+            if (warp0A != null)
+            {
+                Destroy(warp0A.gameObject);
+                Instantiate(sc.grassSecondPrefab, warp0A.transform.position, Quaternion.identity);
+
+                if (tilesToWarp.Length > 0)
+                {
+                    int randomIndex = UnityEngine.Random.Range(0, tilesToWarp.Length);
+                    Destroy(tilesToWarp[randomIndex]);
+                    Instantiate(sc.warp0APrefab, tilesToWarp[randomIndex].transform.position, Quaternion.identity);
+                }
+            }
+            if (warp0B != null)
+            {
+                Destroy(warp0B.gameObject);
+                Instantiate(sc.grassSecondPrefab, warp0B.transform.position, Quaternion.identity);
+
+                if (tilesToWarp.Length > 0)
+                {
+                    int randomIndex = UnityEngine.Random.Range(0, tilesToWarp.Length);
+                    Destroy(tilesToWarp[randomIndex]);
+                    Instantiate(sc.warp0BPrefab, tilesToWarp[randomIndex].transform.position, Quaternion.identity);
+                }
+            }
+        }
+    }
+

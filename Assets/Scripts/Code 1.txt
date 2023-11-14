@@ -1,0 +1,92 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Zoom : MonoBehaviour
+{
+    Transform tf; //Main CameraのTransform
+    Camera cam; //Main CameraのCamera
+    private Vector3 touchStartPos;
+    private float zoomSpeed = 0.1f;
+
+    void Start()
+    {
+        tf = this.gameObject.GetComponent<Transform>(); //Main CameraのTransformを取得する。
+        cam = this.gameObject.GetComponent<Camera>(); //Main CameraのCameraを取得する。
+    }
+
+    void Update()
+    {
+        if (Input.GetKey(KeyCode.I)) //Iキーが押されていれば
+        {
+            cam.orthographicSize = cam.orthographicSize - 1.0f; //ズームイン。
+        }
+        else if (Input.GetKey(KeyCode.O)) //Oキーが押されていれば
+        {
+            cam.orthographicSize = cam.orthographicSize + 1.0f; //ズームアウト。
+        }
+        if (Input.GetKey(KeyCode.UpArrow)) //上キーが押されていれば
+        {
+            tf.position = tf.position + new Vector3(0.0f, 0.1f, 0.0f); //カメラを上へ移動。
+        }
+        else if (Input.GetKey(KeyCode.DownArrow)) //下キーが押されていれば
+        {
+            tf.position = tf.position + new Vector3(0.0f, -0.1f, 0.0f); //カメラを下へ移動。
+        }
+        if (Input.GetKey(KeyCode.LeftArrow)) //左キーが押されていれば
+        {
+            tf.position = tf.position + new Vector3(-0.1f, 0.0f, 0.0f); //カメラを左へ移動。
+        }
+        else if (Input.GetKey(KeyCode.RightArrow)) //右キーが押されていれば
+        {
+            tf.position = tf.position + new Vector3(0.1f, 0.0f, 0.0f); //カメラを右へ移動。
+        }
+
+        // スマートフォンのタッチジェスチャーを処理
+        HandleTouchInput();
+        // PCのタッチパッドをシミュレート
+        SimulateTouchpadInput();
+    }
+
+    void HandleTouchInput()
+    {
+        if (Input.touchCount == 2)
+        {
+            // 2本の指でのズーム処理
+            Touch touch0 = Input.GetTouch(0);
+            Touch touch1 = Input.GetTouch(1);
+
+            Vector2 touch0PrevPos = touch0.position - touch0.deltaPosition;
+            Vector2 touch1PrevPos = touch1.position - touch1.deltaPosition;
+
+            float prevMagnitude = (touch0PrevPos - touch1PrevPos).magnitude;
+            float currentMagnitude = (touch0.position - touch1.position).magnitude;
+
+            float difference = currentMagnitude - prevMagnitude;
+
+            // ズーム処理
+            cam.fieldOfView += difference * zoomSpeed;
+        }
+    }
+    void SimulateTouchpadInput()
+    {
+        if (Input.GetMouseButton(0))
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                touchStartPos = Input.mousePosition;
+            }
+            else
+            {
+                Vector3 touchDelta = touchStartPos - Input.mousePosition;
+                // スクロール処理
+                cam.transform.Translate(touchDelta * 0.01f);
+                touchStartPos = Input.mousePosition;
+            }
+        }
+        else if (Input.GetMouseButtonUp(0))
+        {
+            Debug.Log("ズームできません");
+        }
+    }
+}
